@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: nextcloud
+  name: nextcloud
+spec:
+  containers:
+  - name: database
+    args:
+    - mariadbd
+    env:
+    - name: MYSQL_PASSWORD
+      value: $DATABASE_PASSWORD
+    - name: MYSQL_ROOT_PASSWORD
+      value: $DATABASE_ROOT_PASSWORD
+    - name: MYSQL_USER
+      value: nextcloud
+    - name: MYSQL_DATABASE
+      value: nextcloud
+    image: docker.io/library/mariadb:latest
+    volumeMounts:
+    - mountPath: /var/lib/mysql
+      name: nextcloud-data
+      subPath: nextcloud/database
+
+  - args:
+    - redis-server
+    image: docker.io/library/redis:latest
+    name: redis
+
+  - name: app
+    image: localhost/nextcloud:latest
+    args:
+    - apache2-foreground
+    env:
+    - name: REDIS_HOST_PORT
+      value: "6379"
+    - name: MYSQL_USER
+      value: nextcloud
+    - name: MYSQL_PASSWORD
+      value: $DATABASE_PASSWORD
+    - name: MYSQL_HOST
+      value: 127.0.0.1:3306
+    - name: REDIS_HOST
+      value: 127.0.0.1
+    - name: MYSQL_DATABASE
+      value: nextcloud
+    - name: NEXTCLOUD_TRUSTED_DOMAINS
+      value: $DOMAIN_NAME
+    - name: APACHE_DISABLE_REWRITE_IP
+      value: 1
+    - name: TRUSTED_PROXIES
+      value: 127.0.0.1
+    - name: OVERWRITEPROTOCOL
+      value: https
+    volumeMounts:
+    - mountPath: /var/www/html
+      name: nextcloud-data
+      subPath: nextcloud/html
+    - mountPath: /var/www/html/data
+      name: nextcloud-data
+      subPath: nextcloud/data
+    # ports:
+    # - containerPort: 80
+    #   hostPort: 8001
+
+  - name: cron
+    image: localhost/nextcloud:latest
+    args:
+    - /cron.sh
+    env:
+    - name: REDIS_HOST_PORT
+      value: "6379"
+    - name: MYSQL_USER
+      value: nextcloud
+    - name: MYSQL_PASSWORD
+      value: $DATABASE_PASSWORD
+    - name: MYSQL_HOST
+      value: 127.0.0.1:3306
+    - name: REDIS_HOST
+      value: 127.0.0.1
+    - name: MYSQL_DATABASE
+      value: nextcloud
+    - name: NEXTCLOUD_TRUSTED_DOMAINS
+      value: $DOMAIN_NAME
+    volumeMounts:
+    - mountPath: /var/www/html
+      name: nextcloud-data
+      subPath: nextcloud/html
+    - mountPath: /var/www/html/data
+      name: nextcloud-data
+      subPath: nextcloud/data
+
+  volumes:
+  - hostPath:
+      path: $DATA_FOLDER
+      type: DirectoryOrCreate
+    name: nextcloud-data

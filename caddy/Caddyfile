@@ -1,0 +1,25 @@
+{
+  local_certs
+  http_port $HTTP_PORT
+  https_port $HTTPS_PORT
+}
+
+cloud.$ROOT_DOMAIN {
+  log {
+    output file /var/log/caddy/nextcloud.log
+  }
+  request_body {
+    max_size 512M
+  }
+
+  header Strict-Transport-Security 15552000
+
+  redir /.well-known/carddav /remote.php/dav 301
+  redir /.well-known/caldav /remot.php/dav 301
+
+  reverse_proxy http://nextcloud:80
+}
+
+tunnel.$ROOT_DOMAIN {
+  reverse_proxy http://chisel:80
+}

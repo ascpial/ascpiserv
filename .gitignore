@@ -1,0 +1,9 @@
+# Exclude configuration files
+config.env
+general.env
+chisel/users.json
+
+# Exclude temporary files
+CaddyfileGenerated
+*/data
+kubegenerated.yml
